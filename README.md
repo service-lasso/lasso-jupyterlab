@@ -7,11 +7,10 @@ This repo publishes JupyterLab as an app-owned notebook service. The current rel
 ## What It Packages
 
 - JupyterLab from `app/requirements.txt`
-- JavaScript kernel npm dependency metadata from `app/package.json`
 - A Service Lasso launcher, `lasso-jupyterlab.py`, that prepares runtime folders and starts `jupyter lab`
 - A stop helper, `lasso-jupyterlab-stop.py`, that posts Jupyter's shutdown endpoint for the configured port
 
-The IJavascript dependency is staged with npm install scripts disabled so the service package remains deterministic on the current Node provider. JupyterLab itself, notebook storage, HTTP health, and stop behavior are validated by the release workflow.
+This service deliberately does not ship an IJavascript kernel. IJavascript currently depends on `zeromq@5`, which does not provide a compatible native prebuild for the current `@node` provider and would require ad-hoc native build tooling. JupyterLab itself, notebook storage, HTTP health, absence of an unsupported JavaScript kernelspec, and stop behavior are validated by the release workflow. See [docs/javascript-kernel.md](docs/javascript-kernel.md).
 
 Release artifacts are:
 
@@ -26,7 +25,7 @@ Release artifacts are:
 - Notebook data path: `notebooks`
 - Token: disabled for local managed runtime use
 - Terminals: disabled
-- Dependencies: `@python`, `@node`
+- Dependencies: `@python`
 - Healthcheck: `GET /api`
 
 The manifest exports `JUPYTERLAB_URL` and `JUPYTERLAB_PORT` through `globalenv`.
@@ -38,7 +37,7 @@ npm install
 npm test
 ```
 
-The verifier packages the Windows artifact, downloads the released `@python` provider, extracts both artifacts, starts JupyterLab with the provider Python, checks `GET /api`, runs the packaged stop helper, and confirms the process exits.
+The verifier packages the Windows artifact, downloads the released `@python` provider, extracts both artifacts, starts JupyterLab with the provider Python, checks `GET /api`, proves the unsupported JavaScript kernelspec is not advertised, runs the packaged stop helper, and confirms the process exits.
 
 ## URL Contracts
 
