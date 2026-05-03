@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import { chmod, cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -96,14 +95,6 @@ function pipInstallForTarget(target, requirementsPath, packagesRoot) {
   ]);
 }
 
-function npmInstall(appRoot) {
-  if (process.platform === "win32") {
-    run("cmd.exe", ["/d", "/s", "/c", "npm install --omit=dev --ignore-scripts"], { cwd: appRoot });
-    return;
-  }
-  run("npm", ["install", "--omit=dev", "--ignore-scripts"], { cwd: appRoot });
-}
-
 export async function packageJupyterLab(platform = targetPlatform, version = serviceVersion) {
   const target = targets[platform];
   if (!target) {
@@ -124,9 +115,6 @@ export async function packageJupyterLab(platform = targetPlatform, version = ser
   });
 
   pipInstallForTarget(target, path.join(appRoot, "requirements.txt"), packagesRoot);
-  if (existsSync(path.join(appRoot, "package.json"))) {
-    npmInstall(appRoot);
-  }
 
   await writeFile(path.join(packageRoot, "lasso-jupyterlab.py"), launcherSource, "utf8");
   await writeFile(path.join(packageRoot, "lasso-jupyterlab-stop.py"), stopSource, "utf8");
@@ -139,7 +127,7 @@ export async function packageJupyterLab(platform = targetPlatform, version = ser
         upstream: {
           source: "Service Lasso JupyterLab package",
           python: targetPython,
-          nodeKernel: "ijavascript dependency staged with npm scripts disabled for deterministic packaging",
+          javascriptKernel: "not shipped; IJavascript is not compatible with the current @node provider without native build tooling",
         },
         packagedBy: "service-lasso/lasso-jupyterlab",
         platform,

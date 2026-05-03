@@ -17,7 +17,6 @@
     "JUPYTER_DATA_DIR": "${SERVICE_ROOT}/data",
     "JUPYTER_CONFIG_DIR": "${SERVICE_ROOT}/config",
     "JUPYTER_RUNTIME_DIR": "${SERVICE_ROOT}/runtime",
-    "JUPYTERLAB_JSWORK_PATH": "${SERVICE_ROOT}/jswork",
     "JUPYTERLAB_WORKSPACES_DIR": "${SERVICE_ROOT}/workspaces"
   },
   "globalenv": {
@@ -81,10 +80,6 @@
         "content": ""
       },
       {
-        "path": "./jswork/.keep",
-        "content": ""
-      },
-      {
         "path": "./workspaces/.keep",
         "content": ""
       }
@@ -98,8 +93,7 @@
     "interval": 500
   },
   "depend_on": [
-    "@python",
-    "@node"
+    "@python"
   ],
   "updates": {
     "enabled": true,

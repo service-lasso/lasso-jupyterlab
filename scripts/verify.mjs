@@ -136,8 +136,8 @@ if (platform !== "win32") {
 if (serviceManifest.id !== "jupyterlab" || serviceManifest.version !== serviceVersion) {
   throw new Error(`Unexpected manifest identity: ${JSON.stringify({ id: serviceManifest.id, version: serviceManifest.version })}`);
 }
-if (!serviceManifest.depend_on?.includes("@python") || !serviceManifest.depend_on.includes("@node")) {
-  throw new Error("JupyterLab manifest must depend on @python and @node.");
+if (!serviceManifest.depend_on?.includes("@python") || serviceManifest.depend_on.includes("@node")) {
+  throw new Error("JupyterLab manifest must depend on @python only; JavaScript kernels are not shipped.");
 }
 
 await rm(verifyRoot, { recursive: true, force: true });
@@ -154,16 +154,25 @@ if (packageMetadata.serviceId !== "jupyterlab" || packageMetadata.version !== se
 }
 
 const python = path.join(pythonRoot, "python.exe");
+const jupyterDataDir = path.join(serviceRoot, "data");
+const jupyterConfigDir = path.join(serviceRoot, "config");
+const jupyterRuntimeDir = path.join(serviceRoot, "runtime");
+const jupyterEnv = {
+  ...process.env,
+  SERVICE_ROOT: serviceRoot,
+  SERVICE_PORT: String(port),
+  JUPYTERLAB_HOST: "127.0.0.1",
+  JUPYTERLAB_PORT: String(port),
+  SERVICE_DATA_PATH: path.join(serviceRoot, "notebooks"),
+  JUPYTER_DATA_DIR: jupyterDataDir,
+  JUPYTER_CONFIG_DIR: jupyterConfigDir,
+  JUPYTER_RUNTIME_DIR: jupyterRuntimeDir,
+  JUPYTERLAB_WORKSPACES_DIR: path.join(serviceRoot, "workspaces"),
+  PYTHONPATH: path.join(extractRoot, "python-packages"),
+};
 const child = spawn(python, ["./lasso-jupyterlab.py"], {
   cwd: extractRoot,
-  env: {
-    ...process.env,
-    SERVICE_ROOT: serviceRoot,
-    SERVICE_PORT: String(port),
-    JUPYTERLAB_HOST: "127.0.0.1",
-    JUPYTERLAB_PORT: String(port),
-    SERVICE_DATA_PATH: path.join(serviceRoot, "notebooks"),
-  },
+  env: jupyterEnv,
   stdio: ["ignore", "pipe", "pipe"],
   windowsHide: true,
 });
@@ -184,14 +193,15 @@ try {
     throw new Error(`Unexpected Jupyter API response: ${JSON.stringify(body)}`);
   }
 
+  const kernelspecResponse = await waitForHttp(`http://127.0.0.1:${port}/api/kernelspecs`);
+  const kernelspecs = await kernelspecResponse.json();
+  if (kernelspecs.kernelspecs?.javascript) {
+    throw new Error(`JupyterLab unexpectedly exposed an unsupported JavaScript kernelspec: ${JSON.stringify(kernelspecs.kernelspecs.javascript)}`);
+  }
+
   const stop = spawnSync(python, ["./lasso-jupyterlab-stop.py"], {
     cwd: extractRoot,
-    env: {
-      ...process.env,
-      SERVICE_ROOT: serviceRoot,
-      SERVICE_PORT: String(port),
-      JUPYTERLAB_PORT: String(port),
-    },
+    env: jupyterEnv,
     stdio: "inherit",
     windowsHide: true,
   });
@@ -206,7 +216,7 @@ try {
     }),
   ]);
 
-  console.log(`[lasso-jupyterlab] verified package, @python execution, health, and stop on port ${port}`);
+  console.log(`[lasso-jupyterlab] verified package, @python execution, no unsupported JavaScript kernel, health, and stop on port ${port}`);
 } catch (error) {
   console.error("[lasso-jupyterlab] stdout:");
   console.error(stdout);
