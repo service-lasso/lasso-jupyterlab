@@ -85,13 +85,16 @@
       }
     ]
   },
-  "healthcheck": {
-    "type": "http",
-    "url": "${JUPYTERLAB_URL}/api",
-    "expected_status": 200,
-    "retries": 180,
-    "interval": 500
-  },
+  "healthchecks": [
+    {
+      "id": "jupyterlab-api-ready",
+      "type": "http",
+      "url": "${JUPYTERLAB_URL}/api",
+      "expected_status": 200,
+      "retries": 180,
+      "interval": 500
+    }
+  ],
   "depend_on": [
     "@python"
   ],
