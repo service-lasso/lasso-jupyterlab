@@ -139,6 +139,27 @@ if (serviceManifest.id !== "jupyterlab" || serviceManifest.version !== serviceVe
 if (!serviceManifest.depend_on?.includes("@python") || serviceManifest.depend_on.includes("@node")) {
   throw new Error("JupyterLab manifest must depend on @python only; JavaScript kernels are not shipped.");
 }
+const legacyReadinessField = "health" + "check";
+if (legacyReadinessField in serviceManifest) {
+  throw new Error("JupyterLab manifest must use canonical healthchecks[] instead of the legacy readiness field.");
+}
+if (!Array.isArray(serviceManifest.healthchecks) || serviceManifest.healthchecks.length !== 1) {
+  throw new Error("JupyterLab manifest must declare exactly one canonical healthchecks[] entry.");
+}
+const [readinessCheck] = serviceManifest.healthchecks;
+if (
+  readinessCheck.id !== "jupyterlab-api-ready" ||
+  readinessCheck.type !== "http" ||
+  readinessCheck.url !== "${JUPYTERLAB_URL}/api" ||
+  readinessCheck.expected_status !== 200
+) {
+  throw new Error(`Unexpected JupyterLab healthchecks[] contract: ${JSON.stringify(readinessCheck)}`);
+}
+const disallowedTcpHostField = "tcp" + "host";
+const disallowedTcpPortField = "tcp" + "port";
+if (disallowedTcpHostField in readinessCheck || disallowedTcpPortField in readinessCheck) {
+  throw new Error("JupyterLab healthchecks[] entries must not use legacy TCP aliases.");
+}
 
 await rm(verifyRoot, { recursive: true, force: true });
 await mkdir(extractRoot, { recursive: true });

@@ -11,7 +11,7 @@
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api` | Jupyter server API root and Service Lasso healthcheck |
+| `GET` | `/api` | Jupyter server API root and Service Lasso readiness check |
 | `GET` | `/api/status` | Jupyter server status |
 | `GET` | `/api/contents` | notebook root contents |
 
